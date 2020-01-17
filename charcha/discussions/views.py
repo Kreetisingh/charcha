@@ -1,5 +1,5 @@
 from django.http import HttpResponse, HttpResponseRedirect
-from django.views import View 
+from django.views import View
 from django.views.decorators.http import require_http_methods
 from django import forms
 from django.shortcuts import render, get_object_or_404
@@ -23,6 +23,8 @@ def homepage(request):
     user = None
     if request.user.is_authenticated:
         user = request.user
+    else:
+        print("Invalid authentication")
     posts = Post.objects.recent_posts_with_my_votes(user)
     return render(request, "home.html", context={"posts": posts})
 
@@ -39,16 +41,16 @@ class CommentForm(forms.ModelForm):
 
 class DiscussionView(LoginRequiredMixin, View):
     def get(self, request, post_id):
-        post = Post.objects.get_post_with_my_votes(post_id, 
+        post = Post.objects.get_post_with_my_votes(post_id,
                     request.user)
-        comments = Comment.objects.best_ones_first(post_id, 
+        comments = Comment.objects.best_ones_first(post_id,
                         request.user.id)
         form = CommentForm()
         context = {"post": post, "comments": comments, "form": form}
         return render(request, "discussion.html", context=context)
 
     def post(self, request, post_id):
-        post = Post.objects.get_post_with_my_votes(post_id, 
+        post = Post.objects.get_post_with_my_votes(post_id,
                     request.user)
         form = CommentForm(request.POST)
         if form.is_valid():
@@ -71,10 +73,12 @@ class ReplyToComment(LoginRequiredMixin, View):
         parent_comment = get_object_or_404(Comment, pk=kwargs['id'])
         form = CommentForm(request.POST)
 
-        if not form.is_valid():
+        if form.is_valid():
             post = parent_comment.post
             context = {"post": post, "parent_comment": parent_comment, "form": form}
             return render(request, "reply-to-comment.html", context=context)
+        else:
+            print("form not valid")
 
         comment = parent_comment.reply(form.cleaned_data['text'], request.user)
         post_url = reverse('discussion', args=[parent_comment.post.id])
