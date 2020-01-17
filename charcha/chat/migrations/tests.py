@@ -9,7 +9,7 @@ class DiscussionTests(TestCase):
         self._create_team()
 
     def _create_team(self):
-        team = Team(name="trial team")
+        team = Team(name="Trial team")
         team.save()
         self.team = team
 
