@@ -1,6 +1,7 @@
 from django.db import models
 from charcha.team.models import Team, TeamMember
 
+
 DIRECT_MESSAGE = 1
 GROUP_DIRECT_MESSAGE = 2
 PRIVATE_CHANNEL = 3
@@ -11,8 +12,8 @@ def send_direct_message(self, recipient, text):
     channels = Channel.objects.raw('''SELECT c.id
         from channels c inner join channel_members me
         on c.id = me.channel_id and me.id = %s
-        where c.team_id = %s and c.kind = %s 
-        and exists (select 1 from channel_members recipient 
+        where c.team_id = %s and c.kind = %s
+        and exists (select 1 from channel_members recipient
         where recipient.channel_id = c.id and recipient.member_id = %s)''',
         [self.id, self.team.id, DIRECT_MESSAGE, recipient.id])
 
@@ -44,10 +45,14 @@ def _create_channel(team, channel_name, kind, members=None):
     )
     return channel
 
+'''Basically we are having three database structure as messages ,channels , channel_members and performing
+inner joins between channel_id attribute of messages table and id attribute of channels table whose
+resultant table is inner joined with the channel_id attribute of channel_members table.
+'''
 def get_messages_since(self, last_message_id):
-    return Message.objects.raw("""select m.* from messages m 
+    return Message.objects.raw("""select m.* from messages m
     inner join channels c on m.channel_id = c.id
-    inner join channel_members cm on c.id = cm.channel_id 
+    inner join channel_members cm on c.id = cm.channel_id
     where cm.member_id = %s and m.id > %s""", [self.id, last_message_id])
 
 
@@ -58,18 +63,18 @@ Team.create_private_channel = create_private_channel
 Team.create_public_channel = create_public_channel
 
 class Channel(models.Model):
-    '''A channel is a chat room. 
+    '''A channel is a chat room.
 
-    There are 4 type of channels - 
+    There are 4 type of channels -
     1. 1-1 chat between two members
     2. group chat between multiple members
     3. private chat between multiple members
     4. public chat between multiple members
 
-    The difference between 2 and 3 - group chat is a temporary channel, 
+    The difference between 2 and 3 - group chat is a temporary channel,
     while a private chat is a named channel that is intended to be long lived
 
-    Difference between public and private chat - any team member can join a public 
+    Difference between public and private chat - any team member can join a public
     chat without an explict invite.
     '''
     class Meta:
